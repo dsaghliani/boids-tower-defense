@@ -1,4 +1,4 @@
-use crate::{GameConfig, Velocity};
+use crate::{GameConfig, SpatialHashMap2D, Velocity};
 use bevy::{prelude::*, window::PrimaryWindow};
 use rand::Rng;
 use std::f32::consts;
@@ -9,11 +9,13 @@ pub struct DronePlugin;
 
 impl Plugin for DronePlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(spawn);
+        app.add_startup_system(spawn_spatial_map)
+            .add_startup_system(spawn_drones)
+            .add_systems((update_spatial_map, update_drones).chain());
     }
 }
 
-// ------------------------ Components
+// ------------------------ Data
 
 #[derive(Component, Default)]
 struct Drone;
@@ -26,9 +28,18 @@ struct DroneBundle {
     sprite_bundle: SpriteBundle,
 }
 
+/// A tuple of (`Entity`, position, velocity).
+type DroneData = (Entity, Vec2, Vec2);
+
 // ------------------------ Systems
 
-fn spawn(
+fn spawn_spatial_map(mut commands: Commands, settings: Res<GameConfig>) {
+    commands.spawn(SpatialHashMap2D::<DroneData>::new(
+        settings.spatial_map_cell_size,
+    ));
+}
+
+fn spawn_drones(
     mut commands: Commands,
     settings: Res<GameConfig>,
     asset_server: Res<AssetServer>,
@@ -76,5 +87,64 @@ fn spawn(
             },
             ..Default::default()
         });
+    }
+}
+
+fn update_spatial_map(
+    drones: Query<(Entity, &Transform, &Velocity), With<Drone>>,
+    mut spatial_map: Query<&mut SpatialHashMap2D<DroneData>>,
+) {
+    let mut spatial_map = spatial_map.single_mut();
+    spatial_map.clear();
+
+    for (id, transform, velocity) in &drones {
+        let position = transform.translation.truncate();
+        spatial_map.add(position, (id, position, velocity.0));
+    }
+}
+
+fn update_drones(
+    mut drones: Query<(&mut Velocity, &mut Transform, Entity), With<Drone>>,
+    mut spatial_map: Query<&mut SpatialHashMap2D<DroneData>>,
+    settings: Res<GameConfig>,
+) {
+    let mut spatial_map = spatial_map.single_mut();
+
+    for (mut velocity, mut transform, id) in &mut drones {
+        let position = transform.translation.truncate();
+        velocity.0 +=
+            cohesion(id, position, &mut spatial_map) * settings.cohesion_strength;
+        transform.translation += velocity.0.extend(0.0);
+    }
+}
+
+// ------------------------ RULES
+
+fn cohesion(
+    id: Entity,
+    position: Vec2,
+    context: &mut SpatialHashMap2D<DroneData>,
+) -> Vec2 {
+    debug!("Calculating cohesion for Drone: {id:?}.");
+
+    let mut neighbor_count = 0;
+    let mut position_sum = Vec2::ZERO;
+
+    for (other_id, other_position, _) in context
+        .neighbors(position)
+        .into_iter()
+        .filter(|(other_id, _, _)| id != *other_id)
+    {
+        trace!("\tCalculating cohesion against {other_id:?}.");
+        neighbor_count += 1;
+        position_sum += other_position;
+    }
+
+    if neighbor_count > 0 {
+        #[allow(clippy::cast_precision_loss)]
+        let center_of_mass = position_sum / neighbor_count as f32;
+        center_of_mass - position
+    } else {
+        Vec2::ZERO
     }
 }

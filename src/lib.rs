@@ -17,4 +17,6 @@ struct Velocity(pub Vec2);
 #[derive(Resource, Deserialize)]
 pub struct GameConfig {
     pub drone_count: usize,
+    pub spatial_map_cell_size: f32,
+    pub cohesion_strength: f32,
 }
