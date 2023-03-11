@@ -7,6 +7,7 @@ fn main() {
 
     App::new()
         .add_plugins(DefaultPlugins)
+        .insert_resource(ClearColor(Color::BLACK))
         .insert_resource(config)
         .add_startup_system(spawn_camera)
         .add_plugin(DronePlugin)

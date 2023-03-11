@@ -68,6 +68,10 @@ fn spawn(
                     rotation,
                     ..Default::default()
                 },
+                sprite: Sprite {
+                    color: Color::ORANGE_RED,
+                    ..Default::default()
+                },
                 ..Default::default()
             },
             ..Default::default()
