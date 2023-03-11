@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use boids_tower_defense::{spawn_camera, DronePlugin, GameConfig};
+use boids_tower_defense::{CameraPlugin, DronePlugin, GameConfig};
 
 fn main() {
     let config = get_configuration()
@@ -9,7 +9,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .insert_resource(ClearColor(Color::BLACK))
         .insert_resource(config)
-        .add_startup_system(spawn_camera)
+        .add_plugin(CameraPlugin)
         .add_plugin(DronePlugin)
         .run();
 }
