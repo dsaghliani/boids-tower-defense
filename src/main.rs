@@ -2,16 +2,19 @@ use bevy::prelude::*;
 use boids_tower_defense::{DronePlugin, GameConfig};
 
 fn main() {
-    let config: GameConfig = config::Config::builder()
-        .add_source(config::File::with_name("config"))
-        .build()
-        .expect("the `config` file should be in the root dir and it should be valid")
-        .try_deserialize()
-        .expect("the `config` should match the domain settings type");
+    let config = get_configuration()
+        .expect("the configuration should be present and valid");
 
     App::new()
         .add_plugins(DefaultPlugins)
         .insert_resource(config)
         .add_plugin(DronePlugin)
         .run();
+}
+
+fn get_configuration() -> Result<GameConfig, config::ConfigError> {
+    config::Config::builder()
+        .add_source(config::File::with_name("config"))
+        .build()?
+        .try_deserialize()
 }
