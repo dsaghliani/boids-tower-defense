@@ -1,9 +1,10 @@
-use bevy::prelude::Vec2;
+use bevy::prelude::{Component, Vec2};
 use itertools::Itertools;
 use std::collections::HashMap;
 
 type Region = (i32, i32);
 
+#[derive(Component)]
 pub struct SpatialHashMap2D<Value: Clone> {
     cell_size: f32,
     map: HashMap<Region, Vec<Value>>,
@@ -82,6 +83,11 @@ where
     pub fn add(&mut self, position: Vec2, value: Value) {
         let region = self.vec2_to_region(position);
         self.map.entry(region).or_insert_with(Vec::new).push(value);
+    }
+
+    /// Clear the spatial map, retaining its capacity.
+    pub fn clear(&mut self) {
+        self.map.clear();
     }
 
     #[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation)]
