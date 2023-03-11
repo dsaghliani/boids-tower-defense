@@ -2,9 +2,11 @@
 
 mod camera_plugin;
 mod drones;
+mod spatial_hashmap;
 
 pub use camera_plugin::CameraPlugin;
 pub use drones::DronePlugin;
+pub use spatial_hashmap::SpatialHashMap2D;
 
 use bevy::prelude::{Component, Resource, Vec2};
 use serde::Deserialize;
