@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use leafwing_input_manager::prelude::*;
+use lerp::Lerp;
 
 pub struct CameraPlugin;
 
@@ -24,18 +25,35 @@ fn spawn_camera(mut commands: Commands) {
                 .insert(SingleAxis::mouse_wheel_y(), CameraMovement::Zoom)
                 .build(),
             ..Default::default()
-        });
+        })
+        .insert(TargetCameraScale(1.0));
 }
+
+#[derive(Component)]
+struct TargetCameraScale(pub f32);
 
 fn zoom_camera(
     mut query: Query<
-        (&mut OrthographicProjection, &ActionState<CameraMovement>),
+        (
+            &mut OrthographicProjection,
+            &mut TargetCameraScale,
+            &ActionState<CameraMovement>,
+        ),
         With<Camera2d>,
     >,
 ) {
-    const CAMERA_ZOOM_RATE: f32 = 0.05;
+    const CAMERA_ZOOM_RATE: f32 = 0.1;
+    const LERP_STRENGTH: f32 = 0.1;
 
-    let (mut camera_projection, action_state) = query.single_mut();
+    let (mut camera_projection, mut target_scale, action_state) =
+        query.single_mut();
     let zoom_delta = action_state.value(CameraMovement::Zoom);
-    camera_projection.scale *= zoom_delta.mul_add(-CAMERA_ZOOM_RATE, 1.0);
+
+    // Update the target scale.
+    target_scale.0 *= zoom_delta.mul_add(-CAMERA_ZOOM_RATE, 1.0);
+    target_scale.0 = target_scale.0.clamp(1.0, f32::MAX);
+
+    // Update the actual scale.
+    camera_projection.scale =
+        camera_projection.scale.lerp(target_scale.0, LERP_STRENGTH);
 }
