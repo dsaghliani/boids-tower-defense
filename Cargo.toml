@@ -15,6 +15,7 @@ name = "boids-tower-defense"
 [dependencies]
 bevy = "0.10.0"
 config = { version = "0.13.3", features = ["ron"] }
+rand = "0.8.5"
 serde = { version = "1.0.153", features = ["derive"] }
 
 # Enable a small amount of optimization in debug mode
