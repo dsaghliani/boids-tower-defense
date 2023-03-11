@@ -29,6 +29,7 @@ fn spawn_camera(mut commands: Commands) {
         .insert(TargetCameraScale(1.0));
 }
 
+/// The scale used by `zoom_camera()` to lerp the camera's scale to every frame.
 #[derive(Component)]
 struct TargetCameraScale(pub f32);
 
@@ -42,11 +43,14 @@ fn zoom_camera(
         With<Camera2d>,
     >,
 ) {
+    // The value of the `Zoom` action will be 1 or -1 if the mouse wheel was moved
+    // this frame or 0 if it wasn't. In other words, it's a delta value.
+    // Stateless. To fix that, `TargetCameraScale` is used as the state that stores
+    // what the camera scale should be lerped toward.
     const CAMERA_ZOOM_RATE: f32 = 0.1;
-    const LERP_STRENGTH: f32 = 0.1;
+    const LERP_SPEED: f32 = 0.1;
 
-    let (mut camera_projection, mut target_scale, action_state) =
-        query.single_mut();
+    let (mut cam_projection, mut target_scale, action_state) = query.single_mut();
     let zoom_delta = action_state.value(CameraMovement::Zoom);
 
     // Update the target scale.
@@ -54,6 +58,5 @@ fn zoom_camera(
     target_scale.0 = target_scale.0.clamp(1.0, f32::MAX);
 
     // Update the actual scale.
-    camera_projection.scale =
-        camera_projection.scale.lerp(target_scale.0, LERP_STRENGTH);
+    cam_projection.scale = cam_projection.scale.lerp(target_scale.0, LERP_SPEED);
 }
