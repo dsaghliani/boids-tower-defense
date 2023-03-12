@@ -18,5 +18,12 @@ struct Velocity(pub Vec2);
 pub struct GameConfig {
     pub drone_count: usize,
     pub spatial_map_cell_size: f32,
-    pub cohesion_strength: f32,
+    pub cohesion_config: RuleConfig,
+    pub separation_config: RuleConfig,
+}
+
+#[derive(Deserialize)]
+pub struct RuleConfig {
+    pub radius: f32,
+    pub strength: f32,
 }

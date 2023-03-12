@@ -1,4 +1,4 @@
-use crate::{GameConfig, SpatialHashMap2D, Velocity};
+use crate::{GameConfig, RuleConfig, SpatialHashMap2D, Velocity};
 use bevy::{prelude::*, window::PrimaryWindow};
 use rand::Rng;
 use std::f32::consts;
@@ -114,7 +114,13 @@ fn update_drones(
     for (mut velocity, mut transform, id) in &mut drones {
         let position = transform.translation.truncate();
         velocity.0 +=
-            cohesion(id, position, &mut spatial_map) * settings.cohesion_strength;
+            cohesion(id, position, &mut spatial_map, &settings.cohesion_config)
+                + separation(
+                    id,
+                    position,
+                    &mut spatial_map,
+                    &settings.separation_config,
+                );
         transform.translation += velocity.0.extend(0.0) * time.delta_seconds();
     }
 }
@@ -124,17 +130,22 @@ fn update_drones(
 fn cohesion(
     id: Entity,
     position: Vec2,
-    context: &mut SpatialHashMap2D<DroneData>,
+    flock: &mut SpatialHashMap2D<DroneData>,
+    config: &RuleConfig,
 ) -> Vec2 {
     debug!("Calculating cohesion for Drone: {id:?}.");
 
     let mut neighbor_count = 0;
     let mut position_sum = Vec2::ZERO;
 
-    for (other_id, other_position, _) in context
+    for (other_id, other_position, _) in flock
         .neighbors(position)
         .into_iter()
-        .filter(|(other_id, _, _)| id != *other_id)
+        .filter(|(other_id, other_position, _)| {
+            id != *other_id
+                && position.distance_squared(*other_position)
+                    <= config.radius.powi(2)
+        })
     {
         trace!("\tCalculating cohesion against {other_id:?}.");
         neighbor_count += 1;
@@ -144,8 +155,30 @@ fn cohesion(
     if neighbor_count > 0 {
         #[allow(clippy::cast_precision_loss)]
         let center_of_mass = position_sum / neighbor_count as f32;
-        center_of_mass - position
+        trace!("\tCenter of mass: {center_of_mass}.");
+        (center_of_mass - position) * config.strength
     } else {
         Vec2::ZERO
     }
+}
+
+fn separation(
+    id: Entity,
+    position: Vec2,
+    flock: &mut SpatialHashMap2D<DroneData>,
+    config: &RuleConfig,
+) -> Vec2 {
+    debug!("Calculating separation for Drone: {id:?}.");
+
+    flock
+        .neighbors(position)
+        .into_iter()
+        .filter(|(other_id, other_position, _)| {
+            id != *other_id
+                && position.distance_squared(*other_position)
+                    <= config.radius.powi(2)
+        })
+        .map(|(_, other_position, _)| position - other_position)
+        .sum::<Vec2>()
+        * config.strength
 }
