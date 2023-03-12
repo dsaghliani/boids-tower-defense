@@ -140,20 +140,19 @@ fn cohesion(
     debug!("Calculating cohesion for Drone: {id:?}.");
 
     let mut neighbor_count = 0;
-    let mut position_sum = Vec2::ZERO;
-
-    for (other_id, other_position, _) in flock
+    let position_sum: Vec2 = flock
         .neighbors(position)
         .into_iter()
         .filter(|(other_id, other_position, _)| {
             id != *other_id
                 && Vec2::are_closer_than(config.radius, position, *other_position)
         })
-    {
-        trace!("\tCalculating cohesion against {other_id:?}.");
-        neighbor_count += 1;
-        position_sum += other_position;
-    }
+        .map(|(other_id, other_position, _)| {
+            trace!("\tCalculating cohesion against {other_id:?}.");
+            neighbor_count += 1;
+            other_position
+        })
+        .sum();
 
     if neighbor_count > 0 {
         #[allow(clippy::cast_precision_loss)]
