@@ -113,10 +113,9 @@ fn update_drones(
 
     for (mut velocity, mut transform, id) in &mut drones {
         let position = transform.translation.truncate();
-        velocity.0 += (cohesion(id, position, &mut spatial_map)
-            * settings.cohesion_strength)
-            * time.delta_seconds();
-        transform.translation += velocity.0.extend(0.0);
+        velocity.0 +=
+            cohesion(id, position, &mut spatial_map) * settings.cohesion_strength;
+        transform.translation += velocity.0.extend(0.0) * time.delta_seconds();
     }
 }
 
