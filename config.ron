@@ -1,5 +1,5 @@
 GameConfig(
-    drone_count: 1000,
+    drone_count: 2000,
     spatial_map_cell_size: 50.0,
     cohesion_strength: 0.25
 )
