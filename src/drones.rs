@@ -107,13 +107,15 @@ fn update_drones(
     mut drones: Query<(&mut Velocity, &mut Transform, Entity), With<Drone>>,
     mut spatial_map: Query<&mut SpatialHashMap2D<DroneData>>,
     settings: Res<GameConfig>,
+    time: Res<Time>,
 ) {
     let mut spatial_map = spatial_map.single_mut();
 
     for (mut velocity, mut transform, id) in &mut drones {
         let position = transform.translation.truncate();
-        velocity.0 +=
-            cohesion(id, position, &mut spatial_map) * settings.cohesion_strength;
+        velocity.0 += (cohesion(id, position, &mut spatial_map)
+            * settings.cohesion_strength)
+            * time.delta_seconds();
         transform.translation += velocity.0.extend(0.0);
     }
 }
