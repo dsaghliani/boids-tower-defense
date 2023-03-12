@@ -1,4 +1,5 @@
 use crate::{GameConfig, RuleConfig, SpatialHashMap2D, Vec2Ext, Velocity};
+use angular::atan2;
 use bevy::{prelude::*, window::PrimaryWindow};
 use rand::Rng;
 use std::f32::consts;
@@ -60,11 +61,10 @@ fn spawn_drones(
             rng.gen_range(-win_height / 2.0..win_height / 2.0),
             0.0,
         );
-        let rotation =
-            Quat::from_rotation_z(rng.gen_range(0.0..(consts::PI * 2.0)));
+        let rotation = rng.gen_range(0.0..(consts::PI * 2.0));
 
         trace!(
-            "Spawning a `DroneBundle` at translation {} and rotation {} with the \
+            "Spawning a `DroneBundle` at translation {} with rotation {}, and \
                 texture {:?}.",
             translation,
             rotation,
@@ -76,7 +76,6 @@ fn spawn_drones(
                 texture,
                 transform: Transform {
                     translation,
-                    rotation,
                     ..Default::default()
                 },
                 sprite: Sprite {
@@ -85,6 +84,7 @@ fn spawn_drones(
                 },
                 ..Default::default()
             },
+            velocity: Velocity(Vec2::from_angle(rotation)),
             ..Default::default()
         });
     }
@@ -117,6 +117,9 @@ fn update_drones(
 
     for (mut velocity, mut transform, id) in &mut drones {
         let position = transform.translation.truncate();
+        let saved_velocity = velocity.0;
+
+        // Update the drone's velocity.
         velocity.0 +=
             cohesion(id, position, &mut spatial_map, &settings.cohesion_config)
                 + separation(
@@ -124,8 +127,24 @@ fn update_drones(
                     position,
                     &mut spatial_map,
                     &settings.separation_config,
+                )
+                + alignment(
+                    id,
+                    position,
+                    saved_velocity,
+                    &mut spatial_map,
+                    &settings.alignment_config,
                 );
+        velocity.0 = velocity.0.clamp_length_max(settings.drone_max_speed);
+
+        // Update the drone's position.
         transform.translation += velocity.0.extend(0.0) * time.delta_seconds();
+
+        // Update the drone's rotation (to be in sync with its velocity).
+        if let Some(unit_velocity) = velocity.0.try_normalize() {
+            let angle = atan2(unit_velocity.y, unit_velocity.x);
+            transform.rotation = Quat::from_rotation_z(angle.in_radians());
+        }
     }
 }
 
@@ -186,4 +205,39 @@ fn separation(
         })
         .sum::<Vec2>()
         * config.strength
+}
+
+fn alignment(
+    id: Entity,
+    position: Vec2,
+    velocity: Vec2,
+    flock: &mut SpatialHashMap2D<DroneData>,
+    config: &RuleConfig,
+) -> Vec2 {
+    debug!("Calculating alignment for Drone: {id:?}.");
+
+    let mut neighbor_count = 0;
+    let velocity_sum: Vec2 = flock
+        .neighbors(position)
+        .into_iter()
+        .filter(|(other_id, other_position, _)| {
+            id != *other_id
+                && Vec2::are_closer_than(config.radius, position, *other_position)
+        })
+        .map(|(other_id, _, other_velocity)| {
+            trace!("\tCalculating alignment against {other_id:?}.");
+            neighbor_count += 1;
+            other_velocity
+        })
+        .sum();
+
+    if neighbor_count > 0 {
+        #[allow(clippy::cast_precision_loss)]
+        let average_velocity = velocity_sum / neighbor_count as f32;
+        debug!("\tAverage velocity: {average_velocity}.");
+        average_velocity * config.strength
+    } else {
+        debug!("\tNo nearby neighbors found.");
+        Vec2::ZERO
+    }
 }

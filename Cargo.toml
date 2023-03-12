@@ -13,6 +13,7 @@ path = "src/main.rs"
 name = "boids-tower-defense"
 
 [dependencies]
+angular = "0.1.1"
 bevy = "0.10.0"
 config = { version = "0.13.3", features = ["ron"] }
 itertools = "0.10.5"

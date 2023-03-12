@@ -1,12 +1,17 @@
 GameConfig(
     drone_count: 2000,
     spatial_map_cell_size: 50.0,
+    drone_max_speed: 200,
     cohesion_config: RuleConfig(
         radius: 50.0,
         strength: 0.25
     ),
     separation_config: RuleConfig(
-        radius: 25.0,
+        radius: 35.0,
+        strength: 0.4
+    ),
+    alignment_config: RuleConfig(
+        radius: 40.0,
         strength: 0.25
     )
 )

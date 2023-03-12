@@ -19,8 +19,10 @@ struct Velocity(pub Vec2);
 pub struct GameConfig {
     pub drone_count: usize,
     pub spatial_map_cell_size: f32,
+    pub drone_max_speed: f32,
     pub cohesion_config: RuleConfig,
     pub separation_config: RuleConfig,
+    pub alignment_config: RuleConfig,
 }
 
 #[derive(Deserialize)]
