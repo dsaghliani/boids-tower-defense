@@ -94,6 +94,8 @@ fn update_spatial_map(
     drones: Query<(Entity, &Transform, &Velocity), With<Drone>>,
     mut spatial_map: Query<&mut SpatialHashMap2D<DroneData>>,
 ) {
+    debug!("Clearing and repopulating the spatial hash map.");
+
     let mut spatial_map = spatial_map.single_mut();
     spatial_map.clear();
 
@@ -109,6 +111,8 @@ fn update_drones(
     settings: Res<GameConfig>,
     time: Res<Time>,
 ) {
+    debug!("Updating drones.");
+
     let mut spatial_map = spatial_map.single_mut();
 
     for (mut velocity, mut transform, id) in &mut drones {
@@ -158,6 +162,7 @@ fn cohesion(
         trace!("\tCenter of mass: {center_of_mass}.");
         (center_of_mass - position) * config.strength
     } else {
+        trace!("\tNo nearby neighbors.");
         Vec2::ZERO
     }
 }
@@ -178,7 +183,10 @@ fn separation(
                 && position.distance_squared(*other_position)
                     <= config.radius.powi(2)
         })
-        .map(|(_, other_position, _)| position - other_position)
+        .map(|(other_id, other_position, _)| {
+            trace!("\tCalculating separation against {other_id:?}.");
+            position - other_position
+        })
         .sum::<Vec2>()
         * config.strength
 }
