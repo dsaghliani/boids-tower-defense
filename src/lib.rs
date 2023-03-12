@@ -27,3 +27,13 @@ pub struct RuleConfig {
     pub radius: f32,
     pub strength: f32,
 }
+
+trait Vec2Ext {
+    fn are_closer_than(distance: f32, a: Self, b: Self) -> bool;
+}
+
+impl Vec2Ext for Vec2 {
+    fn are_closer_than(distance: f32, a: Self, b: Self) -> bool {
+        a.distance_squared(b) <= distance.powi(2)
+    }
+}

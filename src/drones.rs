@@ -1,4 +1,4 @@
-use crate::{GameConfig, RuleConfig, SpatialHashMap2D, Velocity};
+use crate::{GameConfig, RuleConfig, SpatialHashMap2D, Vec2Ext, Velocity};
 use bevy::{prelude::*, window::PrimaryWindow};
 use rand::Rng;
 use std::f32::consts;
@@ -147,8 +147,7 @@ fn cohesion(
         .into_iter()
         .filter(|(other_id, other_position, _)| {
             id != *other_id
-                && position.distance_squared(*other_position)
-                    <= config.radius.powi(2)
+                && Vec2::are_closer_than(config.radius, position, *other_position)
         })
     {
         trace!("\tCalculating cohesion against {other_id:?}.");
@@ -180,8 +179,7 @@ fn separation(
         .into_iter()
         .filter(|(other_id, other_position, _)| {
             id != *other_id
-                && position.distance_squared(*other_position)
-                    <= config.radius.powi(2)
+                && Vec2::are_closer_than(config.radius, position, *other_position)
         })
         .map(|(other_id, other_position, _)| {
             trace!("\tCalculating separation against {other_id:?}.");
